@@ -44,7 +44,8 @@ const userSchema = new mongoose.Schema({
         email : String,
         password : String,
         googleId :String,
-        facebookId : String
+        facebookId : String,
+        secret : String
 
 })
 
@@ -127,8 +128,20 @@ app.get("/register",(req,res)=>{
 })
 
 app.get("/secrets",(req,res)=>{
+    // User.find({"secret": {$ne: null}}) = this statement is for mongoDB field not null
+    User.find({"secret": {$ne: null}}).then(function(foundUsers){
+        if (foundUsers) {
+            res.render("secrets", {usersWithSecrets: foundUsers});
+          }
+        }).catch(function(err){
+           console.log(err);
+        })
+})
+
+app.get("/submit",(req,res)=>{
     if(req.isAuthenticated()){
-        res.render("secrets");
+
+        res.render("submit");
     }
     else{
         res.redirect("/login");
@@ -149,6 +162,26 @@ app.get("/logout",(req,res)=>{
             res.redirect('/');
         }
       });
+})
+
+app.post("/submit",(req,res)=>{
+    const submittedSecret =req.body.secret;
+
+    // Once the user is authenticated and their session gets saved, their user details are saved to req.user.
+    // console.log(req.user);
+
+    User.findById(req.user.id).then(function(foundUser){
+        if(foundUser){
+            foundUser.secret = submittedSecret;
+            foundUser.save().then(function(){
+                res.redirect("/secrets");
+            }).catch(function(err){
+                console.log(err);
+            })
+        }
+    }).catch(function(err){
+        console.log(err);
+    })
 })
 
 
@@ -191,6 +224,8 @@ app.post("/login",(req,res)=>{
     })
 
 })
+
+
 
 
 app.listen(3000,function(){
